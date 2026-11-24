@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Saas.Billing.Domain/Saas.Billing.Domain.csproj" />
+    <Project Path="src/Saas.Billing.Application/Saas.Billing.Application.csproj" />
+    <Project Path="src/Saas.Billing.Infrastructure/Saas.Billing.Infrastructure.csproj" />
+    <Project Path="src/Saas.Billing.Api/Saas.Billing.Api.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Saas.Billing.UnitTests/Saas.Billing.UnitTests.csproj" />
+    <Project Path="tests/Saas.Billing.IntegrationTests/Saas.Billing.IntegrationTests.csproj" />
+  </Folder>
+</Solution>
