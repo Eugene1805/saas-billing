@@ -1,0 +1,86 @@
+services:
+  billing-norte-db:
+    image: postgres:17-alpine
+    container_name: vital-billing-norte-db
+    environment:
+      POSTGRES_DB: ${POSTGRES_NORTE_DB:-vital_billing_norte}
+      POSTGRES_USER: ${POSTGRES_NORTE_USER:-vital_billing_norte}
+      POSTGRES_PASSWORD: ${POSTGRES_NORTE_PASSWORD:?Set POSTGRES_NORTE_PASSWORD in .env}
+    ports:
+      - "127.0.0.1:5435:5432"
+    volumes:
+      - billing_norte_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -p 5432 -U ${POSTGRES_NORTE_USER:-vital_billing_norte} -d ${POSTGRES_NORTE_DB:-vital_billing_norte}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  billing-valle-db:
+    image: postgres:17-alpine
+    container_name: vital-billing-valle-db
+    environment:
+      POSTGRES_DB: ${POSTGRES_VALLE_DB:-vital_billing_valle}
+      POSTGRES_USER: ${POSTGRES_VALLE_USER:-vital_billing_valle}
+      POSTGRES_PASSWORD: ${POSTGRES_VALLE_PASSWORD:?Set POSTGRES_VALLE_PASSWORD in .env}
+    ports:
+      - "127.0.0.1:5443:5432"
+    volumes:
+      - billing_valle_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -p 5432 -U ${POSTGRES_VALLE_USER:-vital_billing_valle} -d ${POSTGRES_VALLE_DB:-vital_billing_valle}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  billing-sur-db:
+    image: postgres:17-alpine
+    container_name: vital-billing-sur-db
+    environment:
+      POSTGRES_DB: ${POSTGRES_SUR_DB:-vital_billing_sur}
+      POSTGRES_USER: ${POSTGRES_SUR_USER:-vital_billing_sur}
+      POSTGRES_PASSWORD: ${POSTGRES_SUR_PASSWORD:?Set POSTGRES_SUR_PASSWORD in .env}
+    ports:
+      - "127.0.0.1:5444:5432"
+    volumes:
+      - billing_sur_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -p 5432 -U ${POSTGRES_SUR_USER:-vital_billing_sur} -d ${POSTGRES_SUR_DB:-vital_billing_sur}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  billing-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vital-billing-api
+    depends_on:
+      billing-norte-db:
+        condition: service_healthy
+      billing-valle-db:
+        condition: service_healthy
+      billing-sur-db:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      TenantDatabases__Connections__10000000-0000-0000-0000-000000000001: Host=billing-norte-db;Port=5432;Database=${POSTGRES_NORTE_DB:-vital_billing_norte};Username=${POSTGRES_NORTE_USER:-vital_billing_norte};Password=${POSTGRES_NORTE_PASSWORD:?Set POSTGRES_NORTE_PASSWORD in .env}
+      TenantDatabases__Connections__10000000-0000-0000-0000-000000000002: Host=billing-valle-db;Port=5432;Database=${POSTGRES_VALLE_DB:-vital_billing_valle};Username=${POSTGRES_VALLE_USER:-vital_billing_valle};Password=${POSTGRES_VALLE_PASSWORD:?Set POSTGRES_VALLE_PASSWORD in .env}
+      TenantDatabases__Connections__10000000-0000-0000-0000-000000000004: Host=billing-sur-db;Port=5432;Database=${POSTGRES_SUR_DB:-vital_billing_sur};Username=${POSTGRES_SUR_USER:-vital_billing_sur};Password=${POSTGRES_SUR_PASSWORD:?Set POSTGRES_SUR_PASSWORD in .env}
+      Jwt__Issuer: saas-identity
+      Jwt__Audience: vital-saas
+      Jwt__SigningKey: ${JWT_SIGNING_KEY:?Set JWT_SIGNING_KEY in .env}
+      Ports__Http: 8080
+      Platform__Mode: ${PLATFORM_MODE:-Local}
+      AccessControl__Mode: ${ACCESS_CONTROL_MODE:-Local}
+      Clinical__Mode: ${CLINICAL_MODE:-Local}
+      Directory__Mode: ${DIRECTORY_MODE:-Local}
+      SeedDemoData: ${SEED_DEMO_DATA:-false}
+      OpenApi__Enabled: ${OPENAPI_ENABLED:-true}
+    ports:
+      - "127.0.0.1:8084:8080"
+
+volumes:
+  billing_norte_pgdata:
+  billing_valle_pgdata:
+  billing_sur_pgdata:
